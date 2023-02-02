@@ -187,7 +187,7 @@ def compute_final_stats(n_videos, args, cls='cnn'):
 
     csv_final = os.path.join(args.root_model, args.dataset, str(args.init_task), str(args.nb_class), '{:03d}.csv'.format(args.exp))
 
-    csv_results = os.path.join(args.root_model, args.dataset, str(args.init_task), str(args.nb_class), '{:03d}'.format(args.exp), '{:03d}_{}.csv'.format(args.exp,cls))
+    csv_results = os.path.join(args.root_model, args.dataset, str(args.init_task), str(args.nb_class), '{:03d}'.format(args.exp), '{:03d}_{}_after.csv'.format(args.exp,cls))
     results = pd.read_csv(csv_results, header=None)
     results = np.array(results)
     results = np.transpose(np.array(results))

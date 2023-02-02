@@ -80,8 +80,8 @@ def _test(args, test_loader, model, bic_model=None):
     torch.cuda.empty_cache()
     return top1.avg
 
-def _record_results(args, age, results, cls='cnn'):
-    csv_file = os.path.join(args.root_model, args.dataset, str(args.init_task), str(args.nb_class), '{:03d}'.format(args.exp), '{:03d}_{}.csv'.format(args.exp,cls))
+def _record_results(args, age, results, cls='cnn', a='before'):
+    csv_file = os.path.join(args.root_model, args.dataset, str(args.init_task), str(args.nb_class), '{:03d}'.format(args.exp), '{:03d}_{}_{}.csv'.format(args.exp,cls,a))
     prev_results = None
     if os.path.exists(csv_file) and age > 0:
         with open(csv_file, mode='r') as r_file:
@@ -95,7 +95,7 @@ def _record_results(args, age, results, cls='cnn'):
         r_writer.writerow(results)
 
 
-def eval_task(args, age, task_list, current_head, class_indexer, cur_task_size, prefix=None, bic_model=None):
+def eval_task(args, age, task_list, current_head, class_indexer, cur_task_size, prefix=None, bic_model=None, a=None):
 
     '''DDP parameter'''
     rank = args.rank
@@ -215,7 +215,7 @@ def eval_task(args, age, task_list, current_head, class_indexer, cur_task_size, 
 
     # _record_results(args, age, results_top1, 'cnn')
     if int(os.environ["LOCAL_RANK"]) == 0:
-        _record_results(args, age, results_top1, 'cnn')
+        _record_results(args, age, results_top1, 'cnn', a)
     dist.barrier()
 
     if args.nme:
@@ -223,7 +223,7 @@ def eval_task(args, age, task_list, current_head, class_indexer, cur_task_size, 
             for i in range(args.num_task-len(nme_results_top1)):
                 nme_results_top1.append(-200)
         if int(os.environ["LOCAL_RANK"]) == 0:
-            _record_results(args, age, nme_results_top1, 'nme')
+            _record_results(args, age, nme_results_top1, 'nme', a)
         dist.barrier()
 
     if args.exemplar:

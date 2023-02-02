@@ -27,11 +27,12 @@ def gradhook(self, grad_input, grad_output):
 
 
 class Channel_Importance_Measure(nn.Module):
-    def __init__(self, num_channels, num_segments=1):
+    def __init__(self, num_channels, num_segments=1, num_pixel=1):
         super().__init__()
         self.num_channels = num_channels
         self.num_segments = num_segments
-        self.scale = nn.Parameter(torch.randn(num_channels), requires_grad=False)
+        self.num_pixel = num_pixel
+        self.scale = nn.Parameter(torch.randn(num_channels, num_pixel, num_pixel), requires_grad=False)
         nn.init.constant_(self.scale, 1.0)
         if self.num_segments==1:
             self.register_buffer('importance', torch.zeros_like(self.scale))
@@ -40,9 +41,16 @@ class Channel_Importance_Measure(nn.Module):
 
     def forward(self, x):
         if len(x.shape) == 4:
-            x = x * self.scale.reshape([1,-1,1,1])
-        else:
-            x = x * self.scale.reshape([1,-1])
+            # print("self.scale.shape is {}".format(self.scale.shape))
+            # print("x.scale.shape1 is {}".format(x))
+            # print(x.shape)
+            x = x * self.scale.reshape([1, self.num_channels, self.num_pixel, self.num_pixel])
+            # print("x.scale.shape2 is {}".format(x))
+            # print("x.scale.shape is {}".format(x.shape))
+
+        # else:
+            # print(x.shape)
+            # x = x * self.scale.reshape([1,-1])
         return x
 
 
@@ -148,11 +156,11 @@ class ResNet(nn.Module):
         self.avgpool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-        self.layer1_importance = Channel_Importance_Measure(64 * block.expansion, num_segments)
-        self.layer2_importance = Channel_Importance_Measure(128 * block.expansion, num_segments)
-        self.layer3_importance = Channel_Importance_Measure(256 * block.expansion, num_segments)
-        self.layer4_importance = Channel_Importance_Measure(512 * block.expansion, num_segments)
-        self.raw_features_importance = Channel_Importance_Measure(512 * block.expansion, num_segments)
+        self.layer1_importance = Channel_Importance_Measure(64 * block.expansion, num_segments, 56)
+        self.layer2_importance = Channel_Importance_Measure(128 * block.expansion, num_segments, 28)
+        self.layer3_importance = Channel_Importance_Measure(256 * block.expansion, num_segments, 14)
+        self.layer4_importance = Channel_Importance_Measure(512 * block.expansion, num_segments, 7)
+        self.raw_features_importance = Channel_Importance_Measure(512 * block.expansion, num_segments, 7)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -192,21 +200,25 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         int_features.append(x)
         _,C,H,W = x.shape
+        # print("x1.shape is {}".format(x.shape))
         x = self.layer1_importance(x)
 
         x = self.layer2(x)
         int_features.append(x)
         _,C,H,W = x.shape
+        # print("x2.shape is {}".format(x.shape))
         x = self.layer2_importance(x)
 
         x = self.layer3(x)
         int_features.append(x)
         _,C,H,W = x.shape
+        # print("x3.shape is {}".format(x.shape))
         x = self.layer3_importance(x)
 
         x = self.layer4(x)
         int_features.append(x)
         _,C,H,W = x.shape
+        # print("x4.shape is {}".format(x.shape))
         x = self.layer4_importance(x)
 
         x = self.avgpool(x)

@@ -33,7 +33,7 @@ def main():
 
     # Wandb init
     if args.wandb: 
-        wandb.init(project="hmdb121000", entity="tcd")
+        wandb.init(project="{}".format(args.exp), entity="tcd")
 
     # Set Experiments
     num_class, args.train_list, args.val_list, args.root_path, prefix = dataset_config.return_dataset(args.dataset)
@@ -80,6 +80,11 @@ def main():
         else:
             print("Phase 3 : Manage Exemplar Sets: SKIP (Does not use exemplar set)")
 
+        # if args.testing: 
+        #     print("Phase 6 : Evaluate Model for the Tasks Trained so far")
+        #     n_test_vids = eval_task(args, i, total_task_list[:i+1], current_head,
+        #             class_indexer, len(current_task), prefix=prefix, a='before')
+
         if i > 0 and args.cbf:         
             print("Phase 4 : Class-balanced Fine-Tuning")
             cbf.train_task(args, i, total_task_list[:i+1], current_head, class_indexer, prefix)
@@ -89,7 +94,7 @@ def main():
         if args.testing: 
             print("Phase 5 : Evaluate Model for the Tasks Trained so far")
             n_test_vids = eval_task(args, i, total_task_list[:i+1], current_head,
-                    class_indexer, len(current_task), prefix=prefix)
+                    class_indexer, len(current_task), prefix=prefix, a='after')
 
         torch.cuda.empty_cache()
 

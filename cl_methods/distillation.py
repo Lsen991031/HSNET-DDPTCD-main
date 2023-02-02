@@ -59,11 +59,24 @@ def hs_feat_dist(f1, f2, args, factor):
 
     f1 = f1.reshape((B,C*T,-1))
     f2 = f2.reshape((B,C*T,-1))
+    # print(f1.shape)
     f1 = F.normalize(f1, dim=2, p=2)
     f2 = F.normalize(f2, dim=2, p=2)
+    # print(f1.shape)
     if factor is not None: # Ours
-        factor = factor.reshape([1,-1])
-        loss_hs_feat_dist = torch.mean(factor * torch.frobenius_norm(f1-f2.clone().detach(),dim=-1))
+        if args.dataset == 'ucf101':
+            factor = factor.reshape([1,4096,49])
+        else:
+            factor = factor.reshape([1, 16384 ,49])
+        # print(factor.shape)
+        # print("----------------")
+        # print("sssssssssssssssssss{}".format((factor * (f1-f2)).shape))
+        # print("----------------")
+        # print(torch.frobenius_norm(f1-f2.clone().detach(),dim=-1).shape) 8 * 4096
+        loss_hs_feat_dist = torch.mean(torch.frobenius_norm((factor * ((f1-f2)).clone().detach()),dim=-1))
+        # loss_hs_feat_dist = torch.mean(torch.frobenius_norm((factor * ((f1-f2)).clone().detach()),dim=-1))
+        # print("aaaaaaaaaa{}".format(torch.frobenius_norm((factor * (f1-f2)).clone().detach(),dim=-1).shape))
+        # print(loss_hs_feat_dist)
     else:
         loss_hs_feat_dist = torch.mean(torch.frobenius_norm(f1-f2.clone().detach(),dim=-1))
         loss_hs_feat_dist = loss_hs_feat_dist/sqrt(T)

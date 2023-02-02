@@ -45,35 +45,72 @@ class HPNLearner(nn.Module):
         #                               nn.Conv2d(och1, och2, (3, 3), padding=(1, 1), bias=True),
         #                               nn.ReLU())
 
-
+        # self.sqz4_encoder = nn.Sequential(nn.Conv2d(out, och1, (3, 3), padding=0, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och1),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och1, och2, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och2),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och2, och3, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och3),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och3, och4, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och4),
+        #                         nn.ReLU())        
         
+        # self.decoder1 = nn.Sequential(nn.Conv2d(out, och1, (3, 3), padding=0, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och1),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och1, och2, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och2),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och2, och3, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och3),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och3, och4, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och4),
+        #                         nn.ReLU())        
+        och1, och2 = 512, 2048
         self.decoder1 = nn.Sequential(nn.Conv2d(out, och1, (3, 3), padding=0, stride=2, bias=True),
                                 nn.BatchNorm2d(och1),
                                 nn.ReLU(),
                                 nn.Conv2d(och1, och2, (3, 3), padding=1, stride=2, bias=True),
                                 nn.BatchNorm2d(och2),
-                                nn.ReLU(),
-                                nn.Conv2d(och2, och3, (3, 3), padding=1, stride=2, bias=True),
-                                nn.BatchNorm2d(och3),
-                                nn.ReLU(),
-                                nn.Conv2d(och3, och4, (3, 3), padding=1, stride=2, bias=True),
-                                nn.BatchNorm2d(och4),
                                 nn.ReLU())        
+        self.decoder1_hmdb = nn.Sequential(nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
+                        nn.BatchNorm2d(och2),
+                        nn.ReLU(),
+                        nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
+                        nn.BatchNorm2d(och2),
+                        nn.ReLU()) 
 
-
+        # och1, och2 = 256, 512
+        # self.decoder_ucf = nn.Sequential(nn.Conv2d(out, och1, (3, 3), padding=0, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och1),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och1, och2, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och2),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och2),
+        #                         nn.ReLU(),
+        #                         nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
+        #                         nn.BatchNorm2d(och2),
+        #                         nn.ReLU())        
         och1, och2 = 256, 512
         self.decoder_ucf = nn.Sequential(nn.Conv2d(out, och1, (3, 3), padding=0, stride=2, bias=True),
-                                nn.BatchNorm2d(och1),
-                                nn.ReLU(),
-                                nn.Conv2d(och1, och2, (3, 3), padding=1, stride=2, bias=True),
-                                nn.BatchNorm2d(och2),
-                                nn.ReLU(),
-                                nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
-                                nn.BatchNorm2d(och2),
-                                nn.ReLU(),
-                                nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
-                                nn.BatchNorm2d(och2),
-                                nn.ReLU())        
+                        nn.BatchNorm2d(och1),
+                        nn.ReLU(),
+                        nn.Conv2d(och1, och2, (3, 3), padding=1, stride=2, bias=True),
+                        nn.BatchNorm2d(och2),
+                        nn.ReLU())        
+
+        self.decoder2_ucf = nn.Sequential(nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
+                        nn.BatchNorm2d(och2),
+                        nn.ReLU(),
+                        nn.Conv2d(och2, och2, (3, 3), padding=1, stride=2, bias=True),
+                        nn.BatchNorm2d(och2),
+                        nn.ReLU())        
 
         self.scaler = args.scaler
         self.dataset = args.dataset
@@ -104,9 +141,9 @@ class HPNLearner(nn.Module):
         hypercorr_sqz3 = self.encoder_layer3(hypercorr_pyramid[1])
         hypercorr_sqz2 = self.encoder_layer2(hypercorr_pyramid[2])
 
-        print("hypercorr_sqz4's shape is : {}".format(hypercorr_sqz4.shape))
-        print("hypercorr_sqz3's shape is : {}".format(hypercorr_sqz3.shape))
-        print("hypercorr_sqz2's shape is : {}".format(hypercorr_sqz2.shape))
+        # print("hypercorr_sqz4's shape is : {}".format(hypercorr_sqz4.shape))
+        # print("hypercorr_sqz3's shape is : {}".format(hypercorr_sqz3.shape))
+        # print("hypercorr_sqz2's shape is : {}".format(hypercorr_sqz2.shape))
 
         # Propagate encoded 4D-tensor (Mixing building blocks)
         hypercorr_sqz4 = self.interpolate_support_dims(hypercorr_sqz4, hypercorr_sqz3.size()[-4:-2])
@@ -117,7 +154,7 @@ class HPNLearner(nn.Module):
         hypercorr_mix432 = hypercorr_mix43 + hypercorr_sqz2
         hypercorr_mix432 = self.encoder_layer3to2(hypercorr_mix432)
 
-        print("hypercorr_mix432's shape is : {}".format(hypercorr_mix432.shape))
+        # print("hypercorr_mix432's shape is : {}".format(hypercorr_mix432.shape))
 
         bsz, ch, ha, wa, hb, wb = hypercorr_mix432.size()
         # print("bsz----------shape is : {}".format(bsz))
@@ -133,23 +170,42 @@ class HPNLearner(nn.Module):
             hypercorr_decoded = self.decoder_ucf(hypercorr_encoded)
             # print("encoded----------shape is : {}".format(hypercorr_encoded.shape))
             # print("hypercorr_decoded----------shape is : {}".format(hypercorr_decoded.shape))
-            hypercorr_decoded = hypercorr_decoded.view(bsz, 512, -1).mean(dim=-1)
-            hypercorr_decoded = hypercorr_decoded.view(int(bsz/8), 8*512).mean(dim=-2)
+            hypercorr_decoded1 = hypercorr_decoded.view(int(bsz/8), 8*512, 7, 7).mean(dim=-4)
+            # print("hypercorr_decoded----------shape is : {}".format(hypercorr_decoded.shape))
+            hypercorr_decoded1 = hypercorr_decoded1.view(8, 512, 7, 7)
+            # print("hypercorr_decoded----------shape is : {}".format(hypercorr_decoded.shape))
+            hypercorr_decoded2 = self.decoder2_ucf(hypercorr_decoded)
+            hypercorr_decoded2 = hypercorr_decoded2.view(bsz, 512, -1).mean(dim=-1)
+            hypercorr_decoded2 = hypercorr_decoded2.view(int(bsz/8), 8*512).mean(dim=-2)
             # print("decoded---------- is : {}".format(hypercorr_decoded))
-            hypercorr_decoded = hypercorr_decoded.view(8, 512)
+            hypercorr_decoded2 = hypercorr_decoded2.view(8, 512)
+
+            # hypercorr_decoded = hypercorr_decoded.view(bsz, 512, -1).mean(dim=-1)
+            # hypercorr_decoded = hypercorr_decoded.view(int(bsz/8), 8*512).mean(dim=-2)
+            # # print("decoded---------- is : {}".format(hypercorr_decoded))
+            # hypercorr_decoded = hypercorr_decoded.view(8, 512)
         else:
             hypercorr_decoded = self.decoder1(hypercorr_encoded)
             # print("encoded----------shape is : {}".format(hypercorr_encoded.shape))
             # print("hypercorr_decoded----------shape is : {}".format(hypercorr_decoded.shape))
             # hypercorr_decoded = hypercorr_decoded.view(bsz, 2048, -1).mean(dim=-1)
-            # hypercorr_decoded = hypercorr_decoded.view(int(bsz/8), 8*2048).mean(dim=-2)
+            hypercorr_decoded1 = hypercorr_decoded.view(int(bsz/8), 8*2048, 7, 7).mean(dim=-4)
+            hypercorr_decoded1 = hypercorr_decoded1.view(8, 2048, 7, 7)
+            # print("decoded1---------- is : {}".format(hypercorr_decoded1.shape))
+            # hypercorr_decoded = hypercorr_decoded.view(8, 2048)
+
+            hypercorr_decoded2 = self.decoder1_hmdb(hypercorr_decoded)
+            hypercorr_decoded2 = hypercorr_decoded2.view(bsz, 2048, -1).mean(dim=-1)
+            hypercorr_decoded2 = hypercorr_decoded2.view(int(bsz/8), 8*2048).mean(dim=-2)
             # print("decoded---------- is : {}".format(hypercorr_decoded))
-            hypercorr_decoded = hypercorr_decoded.view(8, 2048)
-        hypercorr_decoded = hypercorr_decoded * self.scaler
+            hypercorr_decoded2 = hypercorr_decoded2.view(8, 2048)
+        hypercorr_decoded1 = hypercorr_decoded1 * self.scaler
+        # print("decoded1---------- is : {}".format(hypercorr_decoded1.shape))
+        hypercorr_decoded2 = hypercorr_decoded2 * self.scaler
         # upsample_size = (hypercorr_decoded.size(-1) * 2,) * 2
         # hypercorr_decoded = F.interpolate(hypercorr_decoded, upsample_size, mode='bilinear', align_corners=True)
         # logit_mask = self.decoder2(hypercorr_decoded)
 
         # print("decoded----------shape is : {}".format(hypercorr_decoded))
 
-        return hypercorr_decoded # logit_mask
+        return hypercorr_decoded1, hypercorr_decoded2 # logit_mask

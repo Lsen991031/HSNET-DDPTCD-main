@@ -141,6 +141,9 @@ class TSNDataSet(data.Dataset):
             if self.exemplar_list:
                 for ex_i in self.exemplar_list:
                     temp_i = [VideoRecord(item,ex_i[item[0]][2],True) for item in tmp if item[0] in ex_i.keys()]
+                    # print("temp_i is {}".format(temp_i))
+                    # self.video_list = self.video_list + temp_i
+                    # temp_i.
                     self.video_list = self.video_list + temp_i
             print('video number + exemplar : {:d}'.format(len(self.video_list)))
         else: # only exemplar
@@ -280,8 +283,46 @@ class TSNDataSet(data.Dataset):
                 if p < record.num_frames:
                     p += 1
 
+        indices = np.array(indices).astype(int)
         process_data = self.transform(images)
         indices = np.array(indices).astype(int)
+        # if(record._is_exemplar):
+        #     process_data = process_data.view(8, 3, 224 , 224)
+        #     # print(process_data.shape)
+        #     process_data = process_data.mean(-4)
+        #     # process_data = process_data.view(4, 3, 224 , 224)
+        #     # print(process_data.shape)
+        #     process_data = process_data.repeat(8,1,1,1)
+        #     # print(process_data.shape)
+        #     process_data = process_data.view(24, 224 , 224)
+        #     print(process_data.shape)
+        # print(process_data.shape)
+        # if(record._is_exemplar):
+        #     process_data = process_data.view(4, 2, 3, 224 , 224)
+        #     # print(process_data.shape)
+        #     process_data = process_data.mean(-4)
+        #     process_data = process_data.view(4, 3, 224 , 224)
+        #     # print(process_data.shape)
+        #     process_data = process_data.repeat(2,1,1,1)
+        #     # temp = process_data[1]
+        #     # process_data[1] = process_data[4]
+        #     # process_data[4] = temp
+        #     # temp = process_data[2]
+        #     # process_data[2] = process_data[5]
+        #     # process_data[5] = temp
+        #     a = process_data[0]
+        #     b = process_data[1]
+        #     c = process_data[2]
+        #     d = process_data[3]
+        #     process_data[1] = a
+        #     process_data[2] = b
+        #     process_data[3] = b
+        #     process_data[4] = c
+        #     process_data[5] = c
+        #     process_data[6] = d
+        #     process_data[7] = d
+        #     # print(process_data.shape)
+        #     process_data = process_data.view(24, 224 , 224)
 
         return process_data, self.class_indexer[record.label], [record.path, record.num_frames, indices.astype(int)]
 

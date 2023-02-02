@@ -133,7 +133,7 @@ def manage_exemplar_set(args, age, current_task, current_head, class_indexer, pr
     if args.budget_type == 'fixed':
         exemplar_per_class = args.K//current_head
     else:
-        exemplar_per_class = args.K
+        exemplar_per_class = args.K + 1
 
     if age > 0:
         exemplar_dict = load_exemplars(args, device)
@@ -191,7 +191,8 @@ def manage_exemplar_set(args, age, current_task, current_head, class_indexer, pr
                         pin_memory=True, drop_last=False)
 
     current_task_exemplar = _construct_exemplar_set(train_loader_for_exemplar,model,current_task,class_indexer,exemplar_per_class,args)
-    
+    learnable_para = torch.nn.Parameter(torch.randn(3, 224, 224), requires_grad=True)
+
     if age > 0:
         # Reduce Exemplar Set
         if args.budget_type == 'fixed':

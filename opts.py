@@ -132,3 +132,4 @@ parser.add_argument('--dist-url', default='env://', help='url used to set up dis
 parser.add_argument('--scaler', default=10, type=int, help='number of distributed processes')
 parser.add_argument("--local_rank", type=int)
 parser.add_argument('--hs_lr', default=1e-3, type=float)
+parser.add_argument('--clip_gradient', default=1, type=float)

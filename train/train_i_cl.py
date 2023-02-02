@@ -85,7 +85,7 @@ def _train(args, train_loader, model, hs_model, criterion, optimizer, hs_optimiz
 
         '''Extract feats of model'''
         hs_input = input.cuda()
-        #print("input's shape : {}".format(input.shape))
+        # print("input's shape : {}".format(input.shape))
         if args.dataset == 'ucf101':
             feats = model.module.base_model.extract_feat_res_ucf(hs_input.view((-1, 3) + input.size()[-2:]))
         else:
@@ -118,14 +118,16 @@ def _train(args, train_loader, model, hs_model, criterion, optimizer, hs_optimiz
                 else:
                     loss_ce = criterion(preds, target_)
 
-                hs_importance = hs_model(feats, feats_old)
+                hs_importance1, hs_importance2 = hs_model(feats, feats_old)
+                # print(hs_importance1.shape)
 
                 # print("importance_list is {}".format(importance_list))
 
-                loss_kd_logit = cl_dist.lf_dist_tcd(feat,feat_old,factor=importance_list[-1] if importance_list else None)
-                loss_att = cl_dist.hs_feat_dist(int_features[-1], int_features_old[-1], args, hs_importance)
+                loss_kd_logit = cl_dist.lf_dist_tcd(feat,feat_old) #,factor=hs_importance2) # importance_list[-1] if importance_list else None)
+                loss_att = cl_dist.hs_feat_dist(int_features[-1], int_features_old[-1], args, hs_importance1)
                 # loss_att = cl_dist.feat_dist(int_features,int_features_old,args,factor=importance_list[:-1] if importance_list else None)
-                loss = lambda_0[0] * loss_ce + args.lambda_1 * loss_att + lambda_0[1] * loss_kd_logit
+                loss_att1 = cl_dist.feat_dist(int_features,int_features_old,args)
+                loss = lambda_0[0] * loss_ce + args.lambda_1 * loss_att  + args.lambda_1 * loss_att1  # + lambda_0[1] * loss_kd_logit
                 # print("lambda_0[1] * loss_kd_logit is {}".format(lambda_0[1] * loss_kd_logit))
 
                 #del preds_old, feat_old, int_features_old
@@ -154,7 +156,7 @@ def _train(args, train_loader, model, hs_model, criterion, optimizer, hs_optimiz
 
         if args.clip_gradient is not None:
             total_norm = clip_grad_norm_(model.parameters(), args.clip_gradient)
-
+            
         optimizer.step()
         hs_optimizer.step()
 
@@ -178,7 +180,7 @@ def _train(args, train_loader, model, hs_model, criterion, optimizer, hs_optimiz
         if i % args.print_freq == 0:
             if rank == 0:
                 print(datetime.datetime.now())
-            output = ('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t'
+            output = ('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t  hs_lr:{hs_lr:.5f}\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
@@ -190,7 +192,9 @@ def _train(args, train_loader, model, hs_model, criterion, optimizer, hs_optimiz
                 epoch, i, len(train_loader), batch_time=batch_time,
                 data_time=data_time, loss=losses, loss_ce=losses_ce, loss_kd_logit=losses_kd_logit,
                 loss_att=losses_att, loss_div=losses_div,
-                top1=top1, lr=optimizer.param_groups[-1]['lr'] * 0.1))
+                top1=top1, lr=optimizer.param_groups[-1]['lr'] * 0.1, 
+                hs_lr=hs_optimizer.param_groups[-1]['lr'] * 0.1)
+                )
             if rank == 0:
                 print(output)
         #torch.cuda.empty_cache()
@@ -199,6 +203,7 @@ def _train(args, train_loader, model, hs_model, criterion, optimizer, hs_optimiz
             wandb.log({"task_{}/loss".format(age): losses.avg,
                 "task_{}/train_top1".format(age): top1.avg,
                 "task_{}/lr".format(age): optimizer.param_groups[-1]['lr'] * 0.1,
+                "task_{}/hs_lr".format(age): hs_optimizer.param_groups[-1]['lr'] * 0.1,
                 "task_{}/loss_ce".format(age): losses_ce.avg,
                 "task_{}/loss_kd (logit)".format(age): losses_kd_logit.avg,
                 "task_{}/loss_kd (att)".format(age): losses_att.avg,
@@ -375,11 +380,13 @@ def train_task(args, age, current_task, current_head, class_indexer, model_old=N
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     hs_policies = []
-    hs_policies.append({'params': hs_model.parameters(),'lr_mult': 5, 'decay_mult': 1, 'lr': 0.001})
+    hs_policies.append({'params': hs_model.parameters(),'lr_mult': 10, 'decay_mult': 1})
     hs_optimizer = torch.optim.SGD(hs_policies,
                                 args.hs_lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
+    # print(args.hs_lr)
+    # print("=========================================")
 
     if args.loss_type == 'nll':
         criterion = nn.CrossEntropyLoss().cuda()
@@ -419,7 +426,7 @@ def train_task(args, age, current_task, current_head, class_indexer, model_old=N
         '''Set seed to train_sampler ----DDP '''
         train_sampler.set_epoch(epoch)
 
-        _adjust_learning_rate(args, optimizer, epoch, args.lr_type, args.lr_steps)
+        _adjust_learning_rate(args, optimizer, hs_optimizer, epoch, args.lr_type, args.lr_steps)
         if rank == 0:
             print("Learning rate adjusted")
 
@@ -451,11 +458,13 @@ def train_task(args, age, current_task, current_head, class_indexer, model_old=N
     # torch.cuda.empty_cache()
 
 
-def _adjust_learning_rate(args, optimizer, epoch, lr_type, lr_steps):
+def _adjust_learning_rate(args, optimizer, hs_optimizer, epoch, lr_type, lr_steps):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     if lr_type == 'step':
         decay = 0.1 ** (sum(epoch >= np.array(lr_steps)))
         lr = args.lr * decay
+        hs_lr = args.hs_lr * decay
+        print(hs_lr)
         decay = args.weight_decay
     elif lr_type == 'cos':
         import math
@@ -466,5 +475,9 @@ def _adjust_learning_rate(args, optimizer, epoch, lr_type, lr_steps):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr * param_group['lr_mult']
         param_group['weight_decay'] = decay * param_group['decay_mult']
+    
+    # for hs_param_group in hs_optimizer.param_groups:
+    #     hs_param_group['lr'] = hs_lr * hs_param_group['lr_mult']
+    #     hs_param_group['weight_decay'] = decay * hs_param_group['decay_mult']
 
 
